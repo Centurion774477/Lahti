@@ -32,6 +32,35 @@ sub lex {
                 type => 'speak',
                 output => $+{output}
             });
+        } elsif ($line =~ /constant\s(?<variable_name>\w+)\s=\s(?<assignment>\w+)/ || line =~ /(?<variable_name>\w+)\s=\s(?<assignment>\w+)always/) {
+            add_to_tokens({
+                type => 'constant_creation',
+                name => $+{variable_name},
+                value => $+{assignment}
+            });
+        } elsif ($line =~ /if\s(?<attempt>.*)\sfails\s(?<rescue>.*)$/) {
+            add_to_tokens({
+                type => 'if_fails',
+                attempt => $+{attempt},
+                rescue_with => $+{rescue}
+            });
+        } elsif (
+            $line =~ /
+            (if\s(?<condition>\w)\sthen(?<result>.*)$) | 
+            ((?<result>.*)\s(assuming|granted)\s(?<condition>.*)$) |
+            ((?<result>.*)\sif\s(?<condition>.*)$)
+            /x) {
+            add_to_tokens({
+                type => 'conditional',
+                condition => $+{condition},
+                result => $+{result}
+            });
+        } elsif ($line =~ /(?<result>.*)\sunless\s(?<condition>.*)/) {
+            add_to_tokens({
+                type => 'unless',
+                condition => $+{condition},
+                result => $+{result}
+            });
         } else {
             # Let node.js do the linting; I'm not gonna verify your JavaScript.
             add_to_tokens({
@@ -40,6 +69,7 @@ sub lex {
             });
         }
     }
+
     close $fh;
 
     @tokens == 0 and die 'Failed to locate any LazyScript keywords in the file ' . $fileToLex;
@@ -76,6 +106,30 @@ sub parse {
             });
         } elsif ($type eq 'javascript') {
             pushSnippet($token->{'content'});
+        } elsif ($type eq 'constant_creation') {
+            pushSnippet(qq{
+            const $token->{'name'} = $token->{'value'};
+            });
+        } elsif ($type eq 'if_fails') {
+            pushSnippet(qq{
+            try {
+                $token->{'attempt'};
+            } catch {
+                $token->{'rescue_with'};
+            }
+            });
+        } elsif ($type eq 'conditional') {
+            pushSnippet(qq{
+                if ($token->{'condition'}) {
+                    $token->{'result'};
+                }
+            });
+        } elsif ($type eq 'unless') {
+            pushSnippet(qq{
+                if (!$token->{'condition'}) {
+                    $token->{'result'};
+                }
+            });
         }
     }
 }
