@@ -2,6 +2,7 @@
 
 use strict; use warnings;
 use feature 'say';
+use File::Basename;
 use FindBin;
 use lib "$FindBin::Bin";
 use LazyScript;
@@ -12,7 +13,8 @@ my $command = $arguments[0];
 
 sub transpile {
     my $fileGiven = $arguments[1];
-    my $fileGoingOut = "$fileGiven.js";
+    my $basename = $arguments[1] =~ s/\.[^.]+$//r;
+    my $fileGoingOut = "$basename.js";
 
     LazyScript::lex($fileGiven);
     LazyScript::parse();

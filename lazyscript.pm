@@ -16,7 +16,7 @@ sub add_to_tokens {
 # argue file to lex
 sub lex {
     my $fileToLex = shift;
-    open(my $fh, '<', $fileToLex) or die 'Failed to open ' . $fileToLex . ' Are you sure it exists?';
+    open(my $fh, '<', $fileToLex) or die 'Failed to open ' . $fileToLex . ' . Are you sure it exists?';
     while (my $line = <$fh>) {
         if ($line =~ /let\s(?<variable>\w+)\s=\slisten/) {
             add_to_tokens({
@@ -27,16 +27,26 @@ sub lex {
             add_to_tokens({
                 type => 'plain_listen'
             });
-        } elsif ($line =~ /speak\s(?<output>\w+)/) {
+        } elsif ($line =~ /speak\s("|')(?<output>.*?)("|')/) {
             add_to_tokens({
                 type => 'speak',
                 output => $+{output}
+            });
+        } else {
+            # Let node.js do the linting; I'm not gonna verify your JavaScript.
+            add_to_tokens({
+                type => 'javascript',
+                content => $line
             });
         }
     }
     close $fh;
 
     @tokens == 0 and die 'Failed to locate any LazyScript keywords in the file ' . $fileToLex;
+
+    # for debugging purposes
+    # say 'Tokens generated:';
+    # say "$_->{'type'}" for @tokens;
 }
 
 my @snippets = ();
@@ -62,8 +72,10 @@ sub parse {
             });
         } elsif ($type eq 'speak') {
             pushSnippet(qq{
-            console.log($token->{'output'});
+            console.log("$token->{'output'}");
             });
+        } elsif ($type eq 'javascript') {
+            pushSnippet($token->{'content'});
         }
     }
 }
@@ -84,6 +96,7 @@ sub generate {
     open(my $newFh, '>', $outputFileName);
     print $newFh $readlineBoilerplate;
     for my $snippet (@snippets) {
+        $snippet =~ s/^\s+//;
         print $newFh $snippet;
     }
     close $newFh;
