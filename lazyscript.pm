@@ -4,8 +4,13 @@ package LazyScript;
 use strict;
 use warnings;
 use feature 'say';
+use diagnostics;
 
 my @tokens = ();
+
+my $expectingClosingBracket = 0; 
+# same lazy error system as JulietScript. If I wanted to upgrade it, 
+# I would add a ledger that marks what line last turned this true
 
 # argue token to push
 sub add_to_tokens {
@@ -13,9 +18,17 @@ sub add_to_tokens {
     push(@tokens, $itemToPush);
 }
 
+# checks if the closing bracket is 0, and throws an error if its not.
+# I know that this would lock you out of nested loops but I don't care.
+sub checkClosingBracketState {
+    $expectingClosingBracket == 1 and die "You must close the previous block before opening a new one.";
+    return 1;
+}
+
 # argue file to lex
 sub lex {
     my $fileToLex = shift;
+
     open(my $fh, '<', $fileToLex) or die 'Failed to open ' . $fileToLex . ' . Are you sure it exists?';
     while (my $line = <$fh>) {
         if ($line =~ /let\s(?<variable>\w+)\s=\slisten/) {
@@ -44,6 +57,18 @@ sub lex {
                 attempt => $+{attempt},
                 rescue_with => $+{rescue}
             });
+        } elsif ($line =~ /if\s(?<comparison>.*)\s===\seither\s(?<value_one>.*)\,\s(?<value_two>.*)\,\s(?<value_three>.*)\sthen\{/) {
+            # I decided on 3 arguments because it's the perfect mix: 2 is short enough to use an OR; 4 or more is in .includes() territory.
+            # I'm also hard coding this into a special conditional because it makes coding easier and only loses a couple of implementations.
+
+            $expectingClosingBracket = 1 if checkClosingBracketState();
+            add_to_tokens({
+                type => 'either_conditional',
+                comparison => $+{comparison},
+                first_value => $+{value_one},
+                second_value => $+{value_two},
+                third_value => $+{value_three}
+            });
         } elsif (
             $line =~ /
             (if\s(?<condition>\w)\sthen(?<result>.*)$) | 
@@ -61,6 +86,31 @@ sub lex {
                 condition => $+{condition},
                 result => $+{result}
             });
+        } elsif ($line =~ /while\s\((?<thing_is_true>.*)\)\sdo\s(\{?)/) {
+            $expectingClosingBracket = 1 if checkClosingBracketState();
+            add_to_tokens({
+                type => 'while_opening',
+                condition => $+{thing_is_true}
+            });
+        } elsif ($line =~ /\}/) {
+            if ($expectingClosingBracket == 0) {
+                die 'Unexpected curly bracket -- } -- detected on line ' . $.;
+            }
+            $expectingClosingBracket = 0;
+            add_to_tokens({
+                type => 'closing_bracket'
+            });
+        } elsif ($line =~ /(until|before)\s\((?<condition>.*)\)\sdo\s\{/) {
+            $expectingClosingBracket = 1 if checkClosingBracketState();
+            add_to_tokens({
+                type => 'until_opening',
+                condition => $+{condition}
+            });
+        } elsif ($line =~ /loop\s\{/) {
+            $expectingClosingBracket = 1 if checkClosingBracketState();
+            add_to_tokens({
+                type => 'generic_loop'
+            });
         } else {
             # Let node.js do the linting; I'm not gonna verify your JavaScript.
             add_to_tokens({
@@ -72,7 +122,8 @@ sub lex {
 
     close $fh;
 
-    @tokens == 0 and die 'Failed to locate any LazyScript keywords in the file ' . $fileToLex;
+    @tokens == 0                 and die 'Failed to locate any LazyScript keywords in the file ' . $fileToLex;
+    $expectingClosingBracket == 1 and die 'There is a missing curly bracket somewhere in ' . $fileToLex; # this is a terrible error message. I'm sorry in advance.
 
     # for debugging purposes
     # say 'Tokens generated:';
@@ -130,6 +181,22 @@ sub parse {
                     $token->{'result'};
                 }
             });
+        } elsif ($type eq 'while_opening') {
+            pushSnippet(qq[
+            while ($token->{'condition'}) {
+            ]);
+        } elsif ($type eq 'closing_bracket') {
+            pushSnippet(qq[
+            }
+            ]);
+        } elsif ($type eq 'until_opening') {
+            pushSnippet(qq[
+            while (!$token->{'condition'}) {
+            ]);
+        } elsif ($type eq 'generic_loop') {
+            pushSnippet(qq[
+            while (true) {
+            ]);
         }
     }
 }
