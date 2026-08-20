@@ -45,7 +45,7 @@ sub lex {
                 type => 'speak',
                 output => $+{output}
             });
-        } elsif ($line =~ /constant\s(?<variable_name>\w+)\s=\s(?<assignment>\w+)/ || line =~ /(?<variable_name>\w+)\s=\s(?<assignment>\w+)always/) {
+        } elsif ($line =~ /constant\s(?<variable_name>\w+)\s=\s(?<assignment>.*)/ || $line =~ /(?<variable_name>\w+)\s=\s(?<assignment>.*)\salways/) {
             add_to_tokens({
                 type => 'constant_creation',
                 name => $+{variable_name},
@@ -57,11 +57,10 @@ sub lex {
                 attempt => $+{attempt},
                 rescue_with => $+{rescue}
             });
-        } elsif ($line =~ /if\s(?<comparison>.*)\s===\seither\s(?<value_one>.*)\,\s(?<value_two>.*)\,\s(?<value_three>.*)\sthen\{/) {
+        } elsif ($line =~ /if\s(?<comparison>.*)\s===\seither\s(?<value_one>.*)\,\s(?<value_two>.*)\,\s(?<value_three>.*)\sthen\s\{/) {
             # I decided on 3 arguments because it's the perfect mix: 2 is short enough to use an OR; 4 or more is in .includes() territory.
             # I'm also hard coding this into a special conditional because it makes coding easier and only loses a couple of implementations.
-
-            $expectingClosingBracket = 1 if checkClosingBracketState();
+            $expectingClosingBracket = 1;
             add_to_tokens({
                 type => 'either_conditional',
                 comparison => $+{comparison},
@@ -145,7 +144,6 @@ sub parse {
         if ($type eq 'assigned_listen') {
             pushSnippet(qq{
             const $token->{'assign_to'} = await rl.question('');
-            rl.close();
             });
         } elsif ($type eq 'plain_listen') {
             pushSnippet(qq{
@@ -197,9 +195,22 @@ sub parse {
             pushSnippet(qq[
             while (true) {
             ]);
+        } elsif ($type eq 'either_conditional') {
+            pushSnippet(qq[
+            if ($token->{'comparison'} === $token->{'first_value'} || $token->{'comparison'} === $token->{'second_value'} || $token->{'comparison'} === $token->{'third_value'}) {
+            ]);
         }
     }
 }
+
+
+# add_to_tokens({
+#     type => 'either_conditional',
+#     comparison => $+{comparison},
+#     first_value => $+{value_one},
+#     second_value => $+{value_two},
+#     third_value => $+{value_three}
+# });
 
 # argue the name of the output file 
 sub generate {
@@ -217,9 +228,9 @@ sub generate {
     open(my $newFh, '>', $outputFileName);
     print $newFh $readlineBoilerplate;
     for my $snippet (@snippets) {
-        $snippet =~ s/^\s+//;
         print $newFh $snippet;
     }
+    print $newFh "rl.close();";
     close $newFh;
     return $outputFileName
 }
