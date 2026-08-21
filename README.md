@@ -1,6 +1,6 @@
 # Lahti
 
-I think JavaScript is a beautiful language. It has a solid blend of speed, flexibility, and strictness; I see a lot of similarities in it to Perl, but I wanted to make it a bit better in CLIs, because currently it is a huge pain to do things like getting inputs, file manipulation, etc. Even printing something to the terminal seems like an afterthought with console.log(). Allow me to introduce you to Lahti (LazyScript).
+I think JavaScript is a beautiful language. It has a solid blend of speed, flexibility, and strictness. I wanted to make JavaScript a bit better in CLIs, however, because currently it is a huge pain to do things like getting inputs, file manipulation, etc. Even printing something to the terminal seems like an afterthought with console.log(). Allow me to introduce you to Lahti (LazyScript).
 
 LazyScript is focused around making JavaScript better for CLI’s, since JS has amazing features like native JSON support (parse and stringify in two words), an excellent async model, and an extremely rich package library.
 
