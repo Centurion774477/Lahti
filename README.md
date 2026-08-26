@@ -12,7 +12,7 @@ I kept the curly braces and dropped the semicolons from JavaScript, however, I d
 
 # Syntax
 
-Quick comment: the esoteric variable names and values you will see throughout this demonstration are sourced from a variety of songs from some of my favorite bands such as HIM. I just wanted to show that there was some reason behind the weird values.
+Quick comment: the esoteric variable names and values you will see throughout this demonstration are sourced from a variety of songs from some of my favorite bands such as HIM, as well as some of my other projects. I just wanted to show that there was some reason behind the weird values.
 
 If a feature is omitted, assume that it is a work in progress, unless I explicitly mention something like "LazyScript is intentionally omitting this feature".
 
@@ -49,7 +49,7 @@ Use speak to print something:
 
 speak compiles to:
 
-`console.log(“foobar”);`
+`console.log(“She's standing on an overpass”);`
 
 ## Conditionals
 
@@ -78,7 +78,7 @@ This is just like Ruby's conditionals. It compiles to the multiline version with
 This is like a reverse and statement from Perl; if thisLifeJustAintWorthLiving evaluates to true, then this will output “Join me in death”. 
 This also has an alias “granted”:
 
-`drownInYourLove granted youOpenYourArms;`
+`drownInYourLove granted youOpenYourArms`
 
 The good old unless:
 
@@ -113,24 +113,24 @@ This compiles to the same thing, but without the ‘do’.
 This is a reverse while loop; it is saying “do this while this is false”, compared to while loops doing something while something is true.
 
 ```
-until (foo) do {
-    speak “bar”
+until (clean) do {
+    wishForSoothingRain
 }
 ```
 
 You can also replace until with before:
 
 ```
-before (foo) do {
-    speak “bar”
+before (clean) do {
+    wishForSoothingRain
 }
 ```
 
 This compiles to:
 
 ```
-while (!foo) {
-    speak “bar”
+while (!clean) {
+    wishForSoothingRain
 }
 ```
 
@@ -139,7 +139,7 @@ This was already briefly mentioned in the arrays section, but it would be weird 
 
 ```
 array.each do {
-    speak “bar”
+    speak “baz”
 }
 ```
 
@@ -151,11 +151,17 @@ array.each value do {
 }
 ```
 
-Either way, this compiles to:
+Here's the respective versions in JavaScript:
+
+```
+array.forEach(v => {
+console.log("baz");
+}
+```
 
 ```
 array.forEach(value => {
-console.log(value)
+console.log(value);
 });
 ```
 
@@ -173,7 +179,7 @@ for 3 times do {
 This compiles to:
 
 ```
-for (let i = 0, i < 4, i++) {
+for (let i = 0, i < 3, i++) {
     console.log(“foo”);
 }
 ```
@@ -224,7 +230,7 @@ if you write “either_string tampere, helsinki, kotka”, it evaluates the lite
 Here's an example:
 
 ```
-if (town === either tampere, helsinki, kotka) then {
+if (town === either_string tampere, helsinki, kotka) then {
     speak "Amazing!"
 }
 ```
@@ -355,5 +361,7 @@ And now the compiled result:
             
 
 Quick note: I am working on fixing the compiler so it puts `rl.close()` on the end of the file instead of immediately after getting the input.
+
+Also, excuse the excess whitespace on the left side of each line. That is a bug that I've been working on fixing. JavaScript is white space-insensitive, so it isn't too urgent, however.
 
 Thanks for reading. If you have any questions, feel free to email me at reeceturner1358@gmail.com.
