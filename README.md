@@ -364,4 +364,21 @@ Quick note: I am working on fixing the compiler so it puts `rl.close()` on the e
 
 Also, excuse the excess whitespace on the left side of each line. That is a bug that I've been working on fixing. JavaScript is white space-insensitive, so it isn't too urgent, however.
 
-Thanks for reading. If you have any questions, feel free to email me at reeceturner1358@gmail.com.
+# Using LazyScript
+
+Eventually I will add a prettier interface, but for now you are going to have to invoke the Perl interpreter specifically.
+
+As of right now, the only command is to transpile a file to JavaScript. This is done through three keywords:
+
+- transpile
+- digest
+- render
+
+Here is the full shell command:
+
+`
+perl lazyscript_cli.pl transpile <file>
+`
+
+
+Thanks for reading. If you have any questions or suggestions, feel free to email me at reeceturner1358@gmail.com. Hei hei.
