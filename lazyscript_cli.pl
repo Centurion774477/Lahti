@@ -11,8 +11,10 @@ my @arguments = @ARGV;
 
 my $command = $arguments[0];
 
+
 sub transpile {
     my $fileGiven = $arguments[1];
+
     my $basename = $arguments[1] =~ s/\.[^.]+$//r;
     my $fileGoingOut = "$basename.js";
 
@@ -20,9 +22,15 @@ sub transpile {
     LazyScript::parse();
     LazyScript::generate($fileGoingOut);
 
-    say 'There you go. The new file is titled ' . $fileGoingOut . ' Enjoy.'; 
+    return $fileGoingOut;
 }
 
 if (grep {$_ eq $command} qw|transpile digest render|) {
-    transpile();
+    my $fileExiting = transpile();
+    say 'There you go. The new file is titled ' . $fileExiting . ' Enjoy.'; 
+} elsif (grep {$_ eq $command} qw|transpile->execute transpile-then-run|) {
+    my $fileExiting = transpile();
+    say 'LazyScript says: ok';
+    # system("node $fileExiting");
 }
+

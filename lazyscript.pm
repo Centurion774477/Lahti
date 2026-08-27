@@ -63,10 +63,10 @@ sub lex {
             $expectingClosingBracket = 1;
             add_to_tokens({
                 type => 'either_conditional',
-                comparison => $+{comparison},
-                first_value => $+{value_one},
+                comparison   => $+{comparison},
+                first_value  => $+{value_one},
                 second_value => $+{value_two},
-                third_value => $+{value_three}
+                third_value  => $+{value_three}
             });
         } elsif (
             $line =~ /
@@ -93,7 +93,7 @@ sub lex {
             });
         } elsif ($line =~ /\}/) {
             if ($expectingClosingBracket == 0) {
-                die 'Unexpected curly bracket -- } -- detected on line ' . $.;
+                die 'Unexpected closing curly bracket -- } -- detected on line ' . $.;
             }
             $expectingClosingBracket = 0;
             add_to_tokens({
@@ -102,7 +102,7 @@ sub lex {
         } elsif ($line =~ /(until|before)\s\((?<condition>.*)\)\sdo\s\{/) {
             $expectingClosingBracket = 1 if checkClosingBracketState();
             add_to_tokens({
-                type => 'until_opening',
+                type      => 'until_opening',
                 condition => $+{condition}
             });
         } elsif ($line =~ /loop\s\{/) {
@@ -110,18 +110,48 @@ sub lex {
             add_to_tokens({
                 type => 'generic_loop'
             });
-        } else {
-            # Let node.js do the linting; I'm not gonna verify your JavaScript.
+        } elsif ($line =~ /(?<expression>.*)\sas\slong\sas\s(?<condition>.*)$/) {
             add_to_tokens({
-                type => 'javascript',
+                type       => 'as_long_as',
+                expression => $+{expression},
+                condition  => $+{condition}
+            });
+        } elsif (
+            $line =~ /if\sevaluated\s(?<variable>.*)\sas\s(?<value>.*)\s===\s(?<match>.*)\sthen\s(?<result>.*)$/
+            ||
+            $line =~ /(?<result>.*)\sif\s(?<variable>.*)\sevaluated\sas\s(?<value>)\s===\s(?<match>.*)$/
+            ) {
+            add_to_tokens({
+                type => 'evaluated_conditional',
+                variable => $+{variable},
+                value => $+{value},
+                match => $+{match},
+                result => $+{result}
+            });
+        } elsif ($line =~ /(?<array>.*)\s<<\s(?<value>.*)/) {
+            add_to_tokens({
+                type => 'add_value_to_array',
+                array => $+{array},
+                item => $+{value}
+            });
+        } elsif ($line =~ /(?<array>.*)\.removeLastElement/) {
+            add_to_tokens({
+                type => 'pop_array',
+                array => $+{array}
+            });
+        } else {
+            # Let node.js do the linting and error handling; I'm not gonna verify your JavaScript.
+            # the only dilemma with this is if the line actually isn't a JavaScript expression.
+            add_to_tokens({
+                type    => 'javascript',
                 content => $line
             });
-        }
-    }
+        } 
+    } 
 
     close $fh;
 
-    @tokens == 0                 and die 'Failed to locate any LazyScript keywords in the file ' . $fileToLex;
+    @tokens == 0                  and die 'Failed to locate any LazyScript keywords in the file ' . $fileToLex;
     $expectingClosingBracket == 1 and die 'There is a missing curly bracket somewhere in ' . $fileToLex; # this is a terrible error message. I'm sorry in advance.
 
     # for debugging purposes
@@ -169,15 +199,15 @@ sub parse {
             });
         } elsif ($type eq 'conditional') {
             pushSnippet(qq{
-                if ($token->{'condition'}) {
-                    $token->{'result'};
-                }
+            if ($token->{'condition'}) {
+                $token->{'result'};
+            }
             });
         } elsif ($type eq 'unless') {
             pushSnippet(qq{
-                if (!$token->{'condition'}) {
-                    $token->{'result'};
-                }
+            if (!$token->{'condition'}) {
+                $token->{'result'};
+            }
             });
         } elsif ($type eq 'while_opening') {
             pushSnippet(qq[
@@ -199,6 +229,29 @@ sub parse {
             pushSnippet(qq[
             if ($token->{'comparison'} === $token->{'first_value'} || $token->{'comparison'} === $token->{'second_value'} || $token->{'comparison'} === $token->{'third_value'}) {
             ]);
+        } elsif ($type eq 'as_long_as') {
+            pushSnippet(qq[
+            if ($token->{'condition'}) {
+            $token->{'expression'};
+            }
+            ]);
+        } elsif ($type eq 'evaluated_conditional') {
+            pushSnippet(qq[
+            let $token->{'variable'} = $token->{'value'};
+            if ($token->{'variable'} === $token->{'match'}) {
+                $token->{'result'};
+            }
+            ]);
+        } elsif ($type eq 'add_value_to_array') {
+            pushSnippet(qq{
+            $token->{'array'}\.push($token->{'item'});
+            });
+        } elsif ($type eq 'pop_array') {
+            pushSnippet(qq{
+            $token->{'array'}\.pop();
+            });
+        } else {
+            die "An internal parser error occured.";
         }
     }
 }
@@ -226,12 +279,16 @@ sub generate {
     die 'An internal action failed: parser' if @snippets == 0;
 
     open(my $newFh, '>', $outputFileName);
+
+    print $newFh "// Generated by LazyScript.";
     print $newFh $readlineBoilerplate;
     for my $snippet (@snippets) {
         print $newFh $snippet;
     }
     print $newFh "rl.close();";
+
     close $newFh;
+
     return $outputFileName
 }
 
