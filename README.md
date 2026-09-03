@@ -12,20 +12,20 @@ I kept the curly braces and dropped the semicolons from JavaScript, however, I d
 
 # Syntax
 
-Quick comment: the esoteric variable names and values you will see throughout this demonstration are sourced from a variety of songs from some of my favorite bands such as HIM, as well as some of my other projects. I just wanted to show that there was some reason behind the weird values.
+Quick comment: the esoteric variable names and values you will see throughout this demonstration are sourced from a variety of songs from some of my favorite bands such as HIM or Nightwish, as well as some of my other projects. I just wanted to show that there was some reason behind the weird values.
 
-If a feature is omitted, assume that it is a work in progress, unless I explicitly mention something like "LazyScript is intentionally omitting this feature".
+If a feature is omitted, assume that it is a work in progress, unless I explicitly mention something like: "LazyScript is intentionally omitting this feature".
 
 
 Before we can get into the special CLI features, you must know the basic syntax. 
 
-The syntax of LazyScript was mostly inspired by JavaScript, but also my linguistic/semantics based mindset and a bit of Ruby, Perl, CoffeeScript, and LiveScript, and a taste of Erlang.
+The syntax of LazyScript was mostly inspired by JavaScript, but also natural language semantics and a bit of Ruby, Perl, CoffeeScript, and LiveScript, and a taste of Erlang.
 
 ## Variable Creation
 
 Use ‘let’ like normal JS to create mutable variables. Alternatively, you can use the ‘my’ keyword as an alias.
 
-`my poisonGirl = “Nemo”`
+`my name = “Nemo”`
 
 To create a constant, use constant – not const:
 
@@ -239,7 +239,7 @@ if (town === either_string tampere, helsinki, kotka) then {
 
 Listen is used to get an input. However, it does not, and will not, output any message.
 
-You can only trigger a blank listen like this:
+You can trigger a blank listen like this:
 
 `listen`
 
@@ -248,7 +248,6 @@ Or, assign a variable to it:
 `let input = listen`
 
 I think this is a better separation between speaking and listening compared to letting the listen keyword output text.
-
 
 ## Conclusion
 
@@ -280,15 +279,15 @@ sleepwalkPastHope if allIsLostInThisWar
 speak "You never left me" unless youLeftMe
 
 while (true) do {
-speak "looping forever"
+speak "looping"
 }
 
 until (done) do {
-speak "not done yet"
+speak "looping"
 }
 
 loop {
-speak "generic loop"
+speak "looping"
 }
 
 ```
@@ -302,7 +301,6 @@ And now the compiled result:
     const rl = readline.createInterface({ input, output });
     
             const userInput = await rl.question('');
-            rl.close();
             
             await rl.question('');
             
@@ -356,7 +354,8 @@ And now the compiled result:
             while (true) {
             
             console.log("generic loop");
-            
+
+            rl.close();
             }
             
 
@@ -367,6 +366,8 @@ Also, excuse the excess whitespace on the left side of each line. That is a bug 
 # Using LazyScript
 
 Eventually I will add a prettier interface, but for now you are going to have to invoke the Perl interpreter specifically.
+
+Naturally, LazyScript will not work if you (somehow) do not have the Perl interpreter on your machine. It also might break if you have an outdated version; the version of Perl I used for development is Perl 5.42.
 
 As of right now, the only command is to transpile a file to JavaScript. This is done through three keywords:
 
@@ -381,4 +382,4 @@ perl lazyscript_cli.pl transpile <file>
 `
 
 
-Thanks for reading. If you have any questions or suggestions, feel free to email me at reeceturner1358@gmail.com. Hei hei.
+Thanks for reading. If you have any questions or suggestions, feel free to email me at reeceturner1358@gmail.com. Hei hei!
